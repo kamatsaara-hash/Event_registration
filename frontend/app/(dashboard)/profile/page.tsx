@@ -11,10 +11,12 @@ import { userAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth(); // Added refreshUser back
   const { addToast } = useToast();
+
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
     phone: user?.phone || '',
@@ -22,18 +24,36 @@ export default function ProfilePage() {
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
   const handleSave = async () => {
     setIsSaving(true);
+
     try {
-      await new Promise((res) => setTimeout(res, 500));
-      await refreshUser();
-      addToast({ type: 'success', title: 'Profile updated successfully!' });
+      await userAPI.updateProfile({
+        fullName: formData.fullName,
+        phone: formData.phone,
+        college: formData.college,
+      });
+
+      if (refreshUser) await refreshUser(); // Update auth context
+
+      addToast({
+        type: 'success',
+        title: 'Profile updated successfully',
+      });
+
       setIsEditing(false);
-    } catch (error) {
-      addToast({ type: 'error', title: 'Failed to update profile' });
+    } catch (error: any) {
+      addToast({
+        type: 'error',
+        title: 'Failed to update profile',
+        description: error.response?.data?.detail || 'Please try again later',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -45,25 +65,32 @@ export default function ProfilePage() {
       animate={{ opacity: 1, y: 0 }}
       className="max-w-2xl mx-auto"
     >
-      <h1 className="text-3xl font-bold text-foreground mb-8">Profile Settings</h1>
+      <h1 className="text-3xl font-bold text-foreground mb-8">
+        Profile Settings
+      </h1>
 
-      {/* Profile Card */}
       <div className="glass-panel rounded-xl border border-border overflow-hidden">
-        {/* Header */}
+
+        {/* HEADER */}
         <div className="p-6 border-b border-border bg-gradient-to-r from-primary/10 to-secondary/10">
           <div className="flex items-center gap-4">
+
             <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center">
               <User className="h-10 w-10 text-primary" />
             </div>
+
             <div>
-              <h2 className="text-xl font-bold text-foreground">{user?.fullName}</h2>
+              <h2 className="text-xl font-bold">{user?.fullName}</h2>
               <p className="text-muted-foreground">{user?.email}</p>
-              <div className={cn(
-                'inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full text-xs font-medium',
-                user?.emailVerified 
-                  ? 'bg-success/10 text-success' 
-                  : 'bg-warning/10 text-warning'
-              )}>
+
+              <div
+                className={cn(
+                  'inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full text-xs font-medium',
+                  user?.emailVerified
+                    ? 'bg-success/10 text-success'
+                    : 'bg-warning/10 text-warning'
+                )}
+              >
                 {user?.emailVerified ? (
                   <>
                     <CheckCircle className="h-3 w-3" />
@@ -77,14 +104,16 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+
           </div>
         </div>
 
-        {/* Form */}
+        {/* FORM */}
         <div className="p-6 space-y-6">
-          {/* Full Name */}
+
+          {/* NAME */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
               Full Name
             </label>
@@ -93,63 +122,51 @@ export default function ProfilePage() {
               value={isEditing ? formData.fullName : user?.fullName || ''}
               onChange={handleChange}
               disabled={!isEditing}
-              className="bg-input border-border"
             />
           </div>
 
-          {/* Email (Read-only) */}
+          {/* EMAIL */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Mail className="h-4 w-4 text-muted-foreground" />
               Email
             </label>
-            <Input
-              value={user?.email || ''}
-              disabled
-              className="bg-muted border-border cursor-not-allowed"
-            />
-            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            <Input value={user?.email || ''} disabled />
           </div>
 
-          {/* Phone */}
+          {/* PHONE */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Phone className="h-4 w-4 text-muted-foreground" />
-              Phone Number
+              Phone
             </label>
             <Input
               name="phone"
               value={isEditing ? formData.phone : user?.phone || ''}
               onChange={handleChange}
               disabled={!isEditing}
-              className="bg-input border-border"
             />
           </div>
 
-          {/* College */}
+          {/* COLLEGE */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+            <label className="text-sm font-medium flex items-center gap-2">
               <Building className="h-4 w-4 text-muted-foreground" />
-              College/University
+              College
             </label>
             <Input
               name="college"
               value={isEditing ? formData.college : user?.college || ''}
               onChange={handleChange}
               disabled={!isEditing}
-              className="bg-input border-border"
             />
           </div>
 
-          {/* Actions */}
+          {/* ACTIONS */}
           <div className="flex gap-3 pt-4">
             {isEditing ? (
               <>
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="bg-primary hover:bg-primary/90"
-                >
+                <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -158,34 +175,25 @@ export default function ProfilePage() {
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Save Changes
+                      Save
                     </>
                   )}
                 </Button>
+
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData({
-                      fullName: user?.fullName || '',
-                      phone: user?.phone || '',
-                      college: user?.college || '',
-                    });
-                  }}
-                  disabled={isSaving}
+                  onClick={() => setIsEditing(false)}
                 >
                   Cancel
                 </Button>
               </>
             ) : (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-              >
+              <Button onClick={() => setIsEditing(true)}>
                 Edit Profile
               </Button>
             )}
           </div>
+
         </div>
       </div>
     </motion.div>

@@ -1,7 +1,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { authAPI } from './api';
+
+//////////////////////////////////////////////////////
+// TYPES
+//////////////////////////////////////////////////////
 
 export interface User {
   id: string;
@@ -33,81 +38,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+//////////////////////////////////////////////////////
+// PROVIDER
+//////////////////////////////////////////////////////
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  const fetchUser = async () => {
+    try {
+      const res = await authAPI.getMe();
+      setUser(res.data);
+    } catch (err) {
+      console.error("No active session or error fetching user:", err);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      
-      if (token && storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          
-          // Verify token is still valid
-          if (token !== 'mock-token' && token !== 'mock-admin-token') {
-            const response = await authAPI.getProfile();
-            setUser(response.data.user);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-          }
-        } catch {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-        }
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
+    fetchUser();
   }, []);
+
+  //////////////////////////////////////////////////////
+  // 🔐 LOGIN
+  //////////////////////////////////////////////////////
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await authAPI.login(email, password);
-      const { token, user: userData } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.warn('Backend unavailable, using mock participant login.');
-      const mockUser: User = {
-        id: '123',
-        fullName: 'Demo Participant',
-        email,
-        role: 'participant',
-        emailVerified: true
-      };
-      localStorage.setItem('token', 'mock-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      await authAPI.login(email, password);
+      await fetchUser(); // Fetch actual user data instead of mocking
+    } catch (err: any) {
+      console.error("LOGIN FAILED:", err);
+      throw new Error(err.response?.data?.detail || "Login failed");
     }
   };
 
+  //////////////////////////////////////////////////////
+  // 🛠 ADMIN LOGIN
+  //////////////////////////////////////////////////////
+
   const adminLogin = async (email: string, password: string) => {
     try {
-      const response = await authAPI.adminLogin(email, password);
-      const { token, user: userData } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-    } catch (error) {
-      console.warn('Backend unavailable, using mock admin login.');
-      const mockUser: User = {
-        id: '000',
-        fullName: 'Admin User',
-        email,
-        role: 'admin',
-        emailVerified: true
-      };
-      localStorage.setItem('token', 'mock-admin-token');
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      await authAPI.adminLogin(email, password);
+      await fetchUser(); // Fetch actual admin data
+    } catch (err: any) {
+      console.error("ADMIN LOGIN FAILED:", err);
+      throw new Error(err.response?.data?.detail || "Admin login failed");
     }
   };
+
+  //////////////////////////////////////////////////////
+  // 📝 SIGNUP
+  //////////////////////////////////////////////////////
 
   const signup = async (data: {
     fullName: string;
@@ -116,28 +102,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     college: string;
     password: string;
   }) => {
-    const response = await authAPI.signup(data);
-    const { token, user: userData } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-  };
-
-  const refreshUser = async () => {
     try {
-      const response = await authAPI.getProfile();
-      setUser(response.data.user);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-    } catch {
-      logout();
+      await authAPI.signup(data);
+      alert("Signup successful. Check your email to verify.");
+    } catch (err: any) {
+      console.error("SIGNUP FAILED:", err);
+      throw new Error(err.response?.data?.detail || "Signup failed");
     }
   };
+
+  //////////////////////////////////////////////////////
+  // 🔓 LOGOUT
+  //////////////////////////////////////////////////////
+
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      setUser(null);
+      router.push('/login');
+    }
+  };
+
+  //////////////////////////////////////////////////////
+  // PROVIDER
+  //////////////////////////////////////////////////////
 
   return (
     <AuthContext.Provider
@@ -150,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         adminLogin,
         signup,
         logout,
-        refreshUser,
+        refreshUser: fetchUser,
       }}
     >
       {children}
@@ -158,10 +149,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+//////////////////////////////////////////////////////
+// HOOK
+//////////////////////////////////////////////////////
+
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 }

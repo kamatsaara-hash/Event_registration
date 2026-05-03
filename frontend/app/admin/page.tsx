@@ -48,15 +48,7 @@ export default function AdminDashboardPage() {
       const response = await adminAPI.getAnalytics();
       setAnalytics(response.data);
     } catch (error) {
-      // Demo data
-      setAnalytics({
-        totalUsers: 523,
-        totalTeams: 87,
-        totalEvents: 15,
-        totalRegistrations: 412,
-        recentRegistrations: 28,
-        activeTeams: 65,
-      });
+      console.error("Failed to fetch analytics", error);
     } finally {
       setIsLoading(false);
     }

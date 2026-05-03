@@ -48,15 +48,16 @@ export default function QRPassPage() {
     setIsLoading(true);
     try {
       const response = await eventsAPI.getRegisteredEvents();
-      const events = response.data.events || [];
-      const passData = events.map((event: { id: string; name: string; type: 'solo' | 'group' }) => ({
-        id: event.id,
-        eventId: event.id,
-        eventName: event.name,
-        eventType: event.type,
+      const registrations = Array.isArray(response.data) ? response.data : (response.data.events || []);
+      const passData = registrations.map((reg: any) => ({
+        id: reg.registrationId || reg.eventId,
+        eventId: reg.eventId,
+        eventName: reg.eventName,
+        eventType: reg.eventType || (reg.teamId ? 'group' : 'solo'),
         qrData: JSON.stringify({
-          eventId: event.id,
-          eventName: event.name,
+          registrationId: reg.registrationId,
+          eventId: reg.eventId,
+          eventName: reg.eventName,
           participantId: user?.id,
           participantName: user?.fullName,
           participantEmail: user?.email,

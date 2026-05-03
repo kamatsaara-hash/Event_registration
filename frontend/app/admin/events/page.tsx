@@ -43,15 +43,9 @@ export default function AdminEventsPage() {
     setIsLoading(true);
     try {
       const response = await adminAPI.getEvents();
-      setEvents(response.data.events || []);
+      setEvents(Array.isArray(response.data) ? response.data : (response.data.events || []));
     } catch (error) {
-      // Demo data
-      setEvents([
-        { id: '1', name: 'Hackathon Royale', type: 'group', description: 'Build innovative solutions in 24 hours.', maxTeamSize: 6, registrations: 45 },
-        { id: '2', name: 'Speed Coding Solo', type: 'solo', description: 'Race against time to solve challenges.', registrations: 32 },
-        { id: '3', name: 'Robo Wars', type: 'group', description: 'Design and battle robots.', maxTeamSize: 4, registrations: 28 },
-        { id: '4', name: 'Quiz Master Pro', type: 'solo', description: 'Test your knowledge.', registrations: 56 },
-      ]);
+      console.error("Failed to fetch events", error);
     } finally {
       setIsLoading(false);
     }
@@ -108,19 +102,8 @@ export default function AdminEventsPage() {
         addToast({ type: 'success', title: 'Event created successfully' });
       }
       closeModal();
-    } catch (error) {
-      // Demo: Still update UI
-      if (editingEvent) {
-        setEvents((prev) =>
-          prev.map((e) =>
-            e.id === editingEvent.id ? { ...e, ...formData } : e
-          )
-        );
-      } else {
-        setEvents((prev) => [...prev, { ...formData, id: Date.now().toString(), registrations: 0 }]);
-      }
-      addToast({ type: 'success', title: editingEvent ? 'Event updated' : 'Event created' });
-      closeModal();
+    } catch (error: any) {
+      addToast({ type: 'error', title: 'Failed to save event', description: error.response?.data?.detail || 'Please try again.' });
     } finally {
       setIsSaving(false);
     }
@@ -131,9 +114,8 @@ export default function AdminEventsPage() {
       await adminAPI.deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e.id !== id));
       addToast({ type: 'success', title: 'Event deleted' });
-    } catch (error) {
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-      addToast({ type: 'success', title: 'Event deleted' });
+    } catch (error: any) {
+      addToast({ type: 'error', title: 'Failed to delete event', description: error.response?.data?.detail || 'Please try again.' });
     }
   };
 

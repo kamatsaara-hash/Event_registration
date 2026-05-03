@@ -54,14 +54,7 @@ export default function AdminParticipantsPage() {
       const response = await adminAPI.getParticipants();
       setParticipants(response.data.participants || []);
     } catch (error) {
-      // Demo data
-      setParticipants([
-        { id: '1', fullName: 'John Doe', email: 'john@example.com', phone: '+1234567890', college: 'MIT', emailVerified: true, registeredEvents: 3, createdAt: '2024-01-15' },
-        { id: '2', fullName: 'Jane Smith', email: 'jane@example.com', phone: '+1987654321', college: 'Stanford', emailVerified: true, registeredEvents: 2, createdAt: '2024-01-16' },
-        { id: '3', fullName: 'Bob Wilson', email: 'bob@example.com', phone: '+1122334455', college: 'Harvard', emailVerified: false, registeredEvents: 1, createdAt: '2024-01-17' },
-        { id: '4', fullName: 'Alice Johnson', email: 'alice@example.com', phone: '+1555666777', college: 'Berkeley', emailVerified: true, registeredEvents: 4, createdAt: '2024-01-18' },
-        { id: '5', fullName: 'Charlie Brown', email: 'charlie@example.com', phone: '+1888999000', college: 'UCLA', emailVerified: false, registeredEvents: 2, createdAt: '2024-01-19' },
-      ]);
+      console.error("Failed to fetch participants", error);
     } finally {
       setIsLoading(false);
     }
@@ -72,9 +65,8 @@ export default function AdminParticipantsPage() {
       await adminAPI.deleteParticipant(id);
       setParticipants((prev) => prev.filter((p) => p.id !== id));
       addToast({ type: 'success', title: 'Participant deleted' });
-    } catch (error) {
-      setParticipants((prev) => prev.filter((p) => p.id !== id));
-      addToast({ type: 'success', title: 'Participant deleted' });
+    } catch (error: any) {
+      addToast({ type: 'error', title: 'Failed to delete participant', description: error.response?.data?.detail || 'Please try again.' });
     }
   };
 

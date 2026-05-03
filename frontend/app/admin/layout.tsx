@@ -20,7 +20,7 @@ export default function AdminLayout({
     if (pathname.startsWith('/admin/admin-login')) return;
 
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      router.push('/admin/admin-login');
     }
     if (!isLoading && isAuthenticated && !isAdmin) {
       router.push('/dashboard');

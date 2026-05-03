@@ -65,10 +65,14 @@ export default function EventsPage() {
     setIsLoading(true);
     try {
       const response = await eventsAPI.getAll();
-      setEvents(response.data.events || []);
-    } catch (error) {
-      // For demo, show sample events when API is not available
-      setEvents(getSampleEvents());
+      setEvents(Array.isArray(response.data) ? response.data : (response.data.events || []));
+    } catch (error: any) {
+      addToast({ 
+        type: 'error', 
+        title: 'Failed to load events', 
+        description: error.response?.data?.detail || 'Please check your connection and try again.' 
+      });
+      setEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -94,8 +98,12 @@ export default function EventsPage() {
         )
       );
       addToast({ type: 'success', title: 'Registered successfully!' });
-    } catch (error) {
-      addToast({ type: 'error', title: 'Registration failed', description: 'Please try again.' });
+    } catch (error: any) {
+      addToast({ 
+        type: 'error', 
+        title: 'Registration failed', 
+        description: error.response?.data?.detail || 'Please try again.' 
+      });
     } finally {
       setRegisteringId(null);
     }
@@ -260,27 +268,4 @@ export default function EventsPage() {
       </div>
     </main>
   );
-}
-
-// Sample events for demo
-function getSampleEvents(): Event[] {
-  return [
-    // Group Events
-    { id: '1', name: 'Hackathon Royale', type: 'group', description: 'Build innovative solutions in 24 hours. Compete with the best teams.', maxTeamSize: 6 },
-    { id: '2', name: 'Robo Wars', type: 'group', description: 'Design and battle robots in the ultimate arena showdown.', maxTeamSize: 4 },
-    { id: '3', name: 'Code Clash Arena', type: 'group', description: 'Team-based competitive programming challenges.', maxTeamSize: 3 },
-    { id: '4', name: 'Startup Sprint', type: 'group', description: 'Launch a startup idea in 48 hours with your team.', maxTeamSize: 5 },
-    { id: '5', name: 'Gaming Squad Battle', type: 'group', description: 'Esports tournament featuring popular competitive games.', maxTeamSize: 5 },
-    { id: '6', name: 'Treasure Hunt X', type: 'group', description: 'Solve puzzles and find hidden treasures across campus.', maxTeamSize: 4 },
-    { id: '7', name: 'Design Domination', type: 'group', description: 'UI/UX design competition for creative teams.', maxTeamSize: 3 },
-    { id: '8', name: 'AI Innovation Cup', type: 'group', description: 'Build AI-powered solutions for real-world problems.', maxTeamSize: 4 },
-    { id: '9', name: 'Debate Titans Team', type: 'group', description: 'Team debate competition on technology ethics.', maxTeamSize: 3 },
-    { id: '10', name: 'Cyber Security Raid', type: 'group', description: 'Capture the flag cybersecurity challenge.', maxTeamSize: 4 },
-    // Solo Events
-    { id: '11', name: 'Speed Coding Solo', type: 'solo', description: 'Race against time to solve algorithmic challenges.' },
-    { id: '12', name: 'Quiz Master Pro', type: 'solo', description: 'Test your knowledge across tech, science, and more.' },
-    { id: '13', name: 'UI Design Challenge', type: 'solo', description: 'Create stunning UI designs in a limited time.' },
-    { id: '14', name: 'Chess Blitz', type: 'solo', description: 'Fast-paced chess tournament for strategic minds.' },
-    { id: '15', name: 'Idea Pitch Solo', type: 'solo', description: 'Pitch your innovative idea to a panel of judges.' },
-  ];
 }

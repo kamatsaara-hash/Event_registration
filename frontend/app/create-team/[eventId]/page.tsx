@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/navbar';
 import { ParticlesBackground, GlowingOrbs } from '@/components/ui/particles';
 import { useToast } from '@/components/ui/cyber-toast';
-import { teamsAPI } from '@/lib/api';
+import { teamsAPI, eventsAPI } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 export default function CreateTeamPage() {
@@ -36,19 +36,27 @@ export default function CreateTeamPage() {
     setIsLoading(true);
     try {
       const response = await teamsAPI.create({ eventId, teamName, teamSize });
+      
+      // Automatically register for the event
+      try {
+        await eventsAPI.register(eventId);
+      } catch (e: any) {
+        if (e?.response?.status !== 400) {
+          console.error("Auto-registration failed", e);
+        }
+      }
+
       setCreatedTeam({
         name: teamName,
         code: response.data.teamCode,
       });
       addToast({ type: 'success', title: 'Team created successfully!' });
-    } catch (error) {
-      // Demo: generate a random code
-      const demoCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      setCreatedTeam({
-        name: teamName,
-        code: demoCode,
+    } catch (error: any) {
+      addToast({ 
+        type: 'error', 
+        title: 'Failed to create team', 
+        description: error.response?.data?.detail || 'Please try again.' 
       });
-      addToast({ type: 'success', title: 'Team created successfully!' });
     } finally {
       setIsLoading(false);
     }

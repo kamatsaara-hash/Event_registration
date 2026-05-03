@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Navbar } from '@/components/navbar';
 import { ParticlesBackground, GlowingOrbs } from '@/components/ui/particles';
 import { useToast } from '@/components/ui/cyber-toast';
-import { teamsAPI } from '@/lib/api';
+import { teamsAPI, eventsAPI } from '@/lib/api';
 
 export default function JoinTeamPage() {
   const params = useParams();
@@ -35,15 +35,26 @@ export default function JoinTeamPage() {
 
     setIsLoading(true);
     try {
-      const response = await teamsAPI.join(teamCode.toUpperCase());
-      setTeamName(response.data.teamName);
+      const response = await teamsAPI.join({ eventId, teamCode: teamCode.toUpperCase() });
+      
+      // Automatically register for the event
+      try {
+        await eventsAPI.register(eventId);
+      } catch (e: any) {
+        if (e?.response?.status !== 400) {
+          console.error("Auto-registration failed", e);
+        }
+      }
+
+      setTeamName(response.data.teamName || "Your Team");
       setJoined(true);
       addToast({ type: 'success', title: 'Successfully joined the team!' });
-    } catch (error) {
-      // Demo: simulate successful join
-      setTeamName('Demo Team');
-      setJoined(true);
-      addToast({ type: 'success', title: 'Successfully joined the team!' });
+    } catch (error: any) {
+      addToast({ 
+        type: 'error', 
+        title: 'Failed to join team', 
+        description: error.response?.data?.detail || 'Please check the code and try again.' 
+      });
     } finally {
       setIsLoading(false);
     }

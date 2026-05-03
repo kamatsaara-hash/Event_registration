@@ -1,63 +1,19 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
-import { PageLoader } from '@/components/ui/loader';
+import { ReactNode } from 'react';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
-import { Navbar } from '@/components/navbar';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  // 🔥 safer route checks
-  const isAuthPage =
-    pathname.includes('/login') ||
-    pathname.includes('/signup');
-
-  const isAdminPage = pathname.startsWith('/admin');
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    // 🚫 NEVER redirect auth pages
-    if (isAuthPage) return;
-
-    // 🚫 NEVER redirect admin pages
-    if (isAdminPage) return;
-
-    // 🔐 protect only dashboard
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-
-  }, [isLoading, isAuthenticated, pathname, router]);
-
-  if (isLoading) return <PageLoader />;
-
-  // 🚫 no layout for public/admin
-  if (isAuthPage || isAdminPage) {
-    return <>{children}</>;
-  }
-
+export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="lg:hidden">
-        <Navbar />
-      </div>
-
-      <div className="flex">
-        <DashboardSidebar />
-        <main className="flex-1 min-h-screen lg:pt-0 pt-16">
-          <div className="p-6 lg:p-8">{children}</div>
-        </main>
-      </div>
+    <div className="flex h-screen bg-black text-white overflow-hidden">
+      <DashboardSidebar />
+      <main className="flex-1 overflow-y-auto relative">
+        {/* Subtle background glow effect */}
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#8b5cf6]/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#3b82f6]/20 blur-[120px] rounded-full pointer-events-none" />
+        
+        <div className="p-8 md:p-12 max-w-7xl mx-auto relative z-10">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Loader, SkeletonCard } from '@/components/ui/loader';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/components/ui/cyber-toast';
-import { teamsAPI } from '@/lib/api';
+import { teamsAPI, eventsAPI } from '@/lib/api';
 
 interface Team {
   id: string;
@@ -54,38 +54,33 @@ export default function MyTeamsPage() {
   const fetchTeams = async () => {
     setIsLoading(true);
     try {
-      const response = await teamsAPI.getMyTeams();
-      setTeams(response.data.teams || []);
+      const res = await eventsAPI.getRegisteredEvents();
+      const registrations = res.data || [];
+      const userTeams: Team[] = [];
+
+      for (const reg of registrations) {
+        try {
+          const teamRes = await teamsAPI.getMyTeam(reg.eventId);
+
+          if (teamRes.data?.teamId) {
+            userTeams.push({
+              id: teamRes.data.teamId,
+              name: teamRes.data.teamName,
+              eventName: reg.eventName,
+              eventId: reg.eventId,
+              teamCode: teamRes.data.teamCode,
+              maxSize: 6,
+              members: teamRes.data.members || []
+            });
+          }
+        } catch {
+          // ignore if no team for this event
+        }
+      }
+      setTeams(userTeams);
     } catch (error) {
-      // Demo data
-      setTeams([
-        {
-          id: '1',
-          name: 'Code Ninjas',
-          eventName: 'Hackathon Royale',
-          eventId: '1',
-          teamCode: 'ABC123',
-          maxSize: 6,
-          members: [
-            { id: '1', fullName: 'John Doe', email: 'john@example.com', isLeader: true },
-            { id: '2', fullName: 'Jane Smith', email: 'jane@example.com', isLeader: false },
-            { id: '3', fullName: 'Bob Wilson', email: 'bob@example.com', isLeader: false },
-            { id: '4', fullName: user?.fullName || 'You', email: user?.email || 'you@example.com', isLeader: false },
-          ],
-        },
-        {
-          id: '2',
-          name: 'Cyber Warriors',
-          eventName: 'Cyber Security Raid',
-          eventId: '10',
-          teamCode: 'XYZ789',
-          maxSize: 4,
-          members: [
-            { id: '5', fullName: user?.fullName || 'You', email: user?.email || 'you@example.com', isLeader: true },
-            { id: '6', fullName: 'Alice Johnson', email: 'alice@example.com', isLeader: false },
-          ],
-        },
-      ]);
+      console.error("Error fetching teams:", error);
+      setTeams([]);
     } finally {
       setIsLoading(false);
     }

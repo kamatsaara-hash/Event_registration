@@ -22,8 +22,13 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
 
+  //////////////////////////////////////////////////////
+  // ✅ FIXED HANDLE SUBMIT
+  //////////////////////////////////////////////////////
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    console.log("🔥 FORM SUBMITTED");
 
     if (!email || !password) {
       addToast({ type: 'error', title: 'Please fill in all fields' });
@@ -37,14 +42,14 @@ export default function LoginPage() {
 
       addToast({ type: 'success', title: 'Welcome back!' });
 
-      // Redirect to correct dashboard based on role
       if (email === 'admin@gmail.com') {
         router.push('/admin');
       } else {
         router.push('/dashboard');
       }
 
-    } catch {
+    } catch (err) {
+      console.error(err);
       addToast({
         type: 'error',
         title: 'Login failed',
@@ -54,10 +59,12 @@ export default function LoginPage() {
     }
   };
 
+  //////////////////////////////////////////////////////
+  // UI
+  //////////////////////////////////////////////////////
   return (
     <main className="min-h-screen relative">
 
-      {/* Background (non-blocking) */}
       <div className="pointer-events-none">
         <ParticlesBackground />
         <GlowingOrbs />
@@ -68,8 +75,6 @@ export default function LoginPage() {
         subtitle="Sign in to your account to continue"
         footer={
           <div className="text-center space-y-2">
-
-            {/* Signup */}
             <p className="text-muted-foreground">
               Don't have an account?{' '}
               <Link href="/signup" className="text-primary hover:underline">
@@ -77,7 +82,6 @@ export default function LoginPage() {
               </Link>
             </p>
 
-            {/* ✅ ADMIN LINK FIXED */}
             <p className="text-sm text-muted-foreground">
               Are you an admin?{' '}
               <Link
@@ -87,7 +91,6 @@ export default function LoginPage() {
                 Login here
               </Link>
             </p>
-
           </div>
         }
       >

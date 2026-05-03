@@ -42,46 +42,7 @@ export default function AdminTeamsPage() {
       const response = await adminAPI.getAllTeams();
       setTeams(response.data.teams || []);
     } catch (error) {
-      // Demo data
-      setTeams([
-        {
-          id: '1',
-          name: 'Code Ninjas',
-          eventName: 'Hackathon Royale',
-          teamCode: 'ABC123',
-          maxSize: 6,
-          members: [
-            { id: '1', fullName: 'John Doe', email: 'john@example.com', isLeader: true },
-            { id: '2', fullName: 'Jane Smith', email: 'jane@example.com', isLeader: false },
-            { id: '3', fullName: 'Bob Wilson', email: 'bob@example.com', isLeader: false },
-            { id: '4', fullName: 'Alice Johnson', email: 'alice@example.com', isLeader: false },
-          ],
-        },
-        {
-          id: '2',
-          name: 'Cyber Warriors',
-          eventName: 'Cyber Security Raid',
-          teamCode: 'XYZ789',
-          maxSize: 4,
-          members: [
-            { id: '5', fullName: 'Charlie Brown', email: 'charlie@example.com', isLeader: true },
-            { id: '6', fullName: 'Diana Prince', email: 'diana@example.com', isLeader: false },
-          ],
-        },
-        {
-          id: '3',
-          name: 'AI Pioneers',
-          eventName: 'AI Innovation Cup',
-          teamCode: 'DEF456',
-          maxSize: 4,
-          members: [
-            { id: '7', fullName: 'Eve Wilson', email: 'eve@example.com', isLeader: true },
-            { id: '8', fullName: 'Frank Miller', email: 'frank@example.com', isLeader: false },
-            { id: '9', fullName: 'Grace Lee', email: 'grace@example.com', isLeader: false },
-            { id: '10', fullName: 'Henry Ford', email: 'henry@example.com', isLeader: false },
-          ],
-        },
-      ]);
+      console.error("Failed to fetch teams", error);
     } finally {
       setIsLoading(false);
     }

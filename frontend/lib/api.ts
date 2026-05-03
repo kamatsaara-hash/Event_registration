@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// 🔥 IMPORTANT: use backend URL
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -9,22 +8,8 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // ✅ cookies (sessions)
 });
-
-// ⚠️ REMOVE JWT (you said no JWT)
-api.interceptors.request.use(
-  (config) => config,
-  (error) => Promise.reject(error)
-);
-
-// Basic error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
 
 //////////////////////////////////////////////////////
 // 🔐 AUTH API
@@ -40,19 +25,18 @@ export const authAPI = {
     phone: string;
     college: string;
     password: string;
-  }) => api.post('/auth/signup', data),
+  }) =>
+    api.post('/auth/signup', {
+      ...data,
+      confirmPassword: data.password, // ✅ REQUIRED by backend
+    }),
 
+  // ❗ FIXED ROUTE
   adminLogin: (email: string, password: string) =>
-    api.post('/auth/admin/login', { email, password }),
+    api.post('/auth/admin-login', { email, password }),
 
-  verifyEmail: (token: string) =>
-    api.post('/auth/verify-email', { token }),
-
-  resendVerification: () =>
-    api.post('/auth/resend-verification'),
-
-  getProfile: () =>
-    api.get('/auth/profile'),
+  getMe: () => api.get('/auth/me'),
+  logout: () => api.post('/auth/logout'),
 };
 
 //////////////////////////////////////////////////////
@@ -62,20 +46,12 @@ export const authAPI = {
 export const eventsAPI = {
   getAll: () => api.get('/events'),
 
-  getById: (id: string) => api.get(`/events/${id}`),
+  register: (eventId: string) => 
+    api.post('/user/register', { eventId }),
 
-  getGroupEvents: () => api.get('/events?type=group'),
-
-  getSoloEvents: () => api.get('/events?type=solo'),
-
-  register: (eventId: string) =>
-    api.post(`/events/${eventId}/register`),
-
-  unregister: (eventId: string) =>
-    api.delete(`/events/${eventId}/register`),
-
+  // ✅ matches backend
   getRegisteredEvents: () =>
-    api.get('/events/registered'),
+    api.get('/user/my-registrations'),
 };
 
 //////////////////////////////////////////////////////
@@ -86,20 +62,22 @@ export const teamsAPI = {
   create: (data: {
     eventId: string;
     teamName: string;
-    teamSize: number;
-  }) => api.post('/teams', data),
+    teamSize?: number;
+  }) =>
+    api.post('/team/create', data),
 
-  join: (teamCode: string) =>
-    api.post('/teams/join', { teamCode }),
+  join: (data: {
+    eventId: string;
+    teamCode: string;
+  }) =>
+    api.post('/team/join', data),
 
   leave: (teamId: string) =>
-    api.post(`/teams/${teamId}/leave`),
+    api.post(`/team/leave/${teamId}`),
 
-  getMyTeams: () =>
-    api.get('/teams/my-teams'),
-
-  getTeamById: (teamId: string) =>
-    api.get(`/teams/${teamId}`),
+  // ✅ correct endpoint
+  getMyTeam: (eventId: string) =>
+    api.get(`/team/my/${eventId}`),
 };
 
 //////////////////////////////////////////////////////
@@ -107,48 +85,27 @@ export const teamsAPI = {
 //////////////////////////////////////////////////////
 
 export const userAPI = {
-  getDashboard: () =>
-    api.get('/user/dashboard'),
-
-  getQRPass: () =>
-    api.get('/user/qr-pass'),
+  updateProfile: (data: {
+    fullName: string;
+    phone: string;
+    college: string;
+  }) => api.put('/user/profile', data),
 };
 
 //////////////////////////////////////////////////////
-// 🛠 ADMIN API
+// 👑 ADMIN API
 //////////////////////////////////////////////////////
 
 export const adminAPI = {
-  getParticipants: () =>
-    api.get('/admin/participants'),
-
-  getEvents: () =>
-    api.get('/admin/events'),
-
-  createEvent: (data: {
-    name: string;
-    type: 'solo' | 'group';
-    description: string;
-    maxTeamSize?: number;
-  }) => api.post('/admin/events', data),
-
-  getAllTeams: () =>
-    api.get('/admin/teams'),
-
-  scanQR: (qrData: string) =>
-    api.post('/admin/attendance/scan', { qrData }),
-
-  getAnalytics: () =>
-    api.get('/admin/analytics'),
-
-  updateEvent: (id: string, data: any) =>
-    api.put(`/admin/events/${id}`, data),
-
-  deleteEvent: (id: string) =>
-    api.delete(`/admin/events/${id}`),
-
-  deleteParticipant: (id: string) =>
-    api.delete(`/admin/participants/${id}`),
+  getAnalytics: () => api.get('/admin/analytics'),
+  getParticipants: () => api.get('/admin/participants'),
+  deleteParticipant: (id: string) => api.delete(`/admin/participants/${id}`),
+  getAllTeams: () => api.get('/admin/teams'),
+  getEvents: () => api.get('/events'), // Reusing events endpoint for reading
+  createEvent: (data: any) => api.post('/admin/events', data),
+  updateEvent: (id: string, data: any) => api.put(`/admin/events/${id}`, data),
+  deleteEvent: (id: string) => api.delete(`/admin/events/${id}`),
+  scanQR: (registrationId: string) => api.post('/admin/scan', { registrationId }),
 };
 
 export default api;

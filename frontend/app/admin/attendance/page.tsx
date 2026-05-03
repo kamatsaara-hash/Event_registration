@@ -28,11 +28,7 @@ export default function AdminAttendancePage() {
     event: string;
     time: string;
     success: boolean;
-  }>>([
-    { id: '1', name: 'John Doe', event: 'Hackathon Royale', time: '10:30 AM', success: true },
-    { id: '2', name: 'Jane Smith', event: 'Speed Coding Solo', time: '10:28 AM', success: true },
-    { id: '3', name: 'Invalid QR', event: '-', time: '10:25 AM', success: false },
-  ]);
+  }>>([]);
 
   const processQRCode = async (code: string) => {
     if (!code.trim() || isScanning) return;
@@ -57,22 +53,20 @@ export default function AdminAttendancePage() {
         },
         ...prev,
       ]);
-    } catch (error) {
-      // Demo: simulate successful scan
-      const demoResult = {
-        success: true,
-        participantName: 'Demo Participant',
-        eventName: 'Hackathon Royale',
+    } catch (error: any) {
+      const errorResult = {
+        success: false,
+        message: error.response?.data?.detail || 'Invalid QR code',
       };
-      setScanResult(demoResult);
-      addToast({ type: 'success', title: 'Check-in successful!' });
+      setScanResult(errorResult);
+      addToast({ type: 'error', title: 'Verification failed!' });
       setRecentScans((prev) => [
         {
           id: Date.now().toString(),
-          name: 'Demo Participant',
-          event: 'Hackathon Royale',
+          name: 'Unknown',
+          event: '-',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          success: true,
+          success: false,
         },
         ...prev,
       ]);

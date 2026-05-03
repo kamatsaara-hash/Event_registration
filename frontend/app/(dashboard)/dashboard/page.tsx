@@ -1,95 +1,102 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Calendar, Users, QrCode, Bell, CheckCircle, Clock, 
-  ArrowRight, Trophy, Mail, AlertCircle
+import {
+  Calendar, Users, QrCode, Bell,
+  CheckCircle, ArrowRight, Trophy,
+  Mail, AlertCircle, ChevronRight
 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { userAPI, eventsAPI, teamsAPI } from '@/lib/api';
+import { eventsAPI, teamsAPI } from '@/lib/api'; // ✅ FIXED (removed userAPI)
 import { EmptyState } from '@/components/empty-state';
 import { Loader } from '@/components/ui/loader';
 import { cn } from '@/lib/utils';
 
 interface DashboardData {
-  registeredEvents: Array<{
-    id: string;
-    name: string;
-    type: 'solo' | 'group';
-    date?: string;
-  }>;
-  teams: Array<{
-    id: string;
-    name: string;
-    eventName: string;
-    memberCount: number;
-    maxSize: number;
-  }>;
-  notifications: Array<{
-    id: string;
-    message: string;
-    read: boolean;
-    createdAt: string;
-  }>;
+  registeredEvents: any[];
+  teams: any[];
+  notifications: any[];
 }
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 },
-};
-
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+    
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
+
     try {
-      const [eventsRes, teamsRes] = await Promise.all([
-        eventsAPI.getRegisteredEvents(),
-        teamsAPI.getMyTeams(),
-      ]);
+      // 🔹 Get registrations
+      const res = await eventsAPI.getRegisteredEvents();
+      const registrations = res.data || [];
+
+      // 🔹 Format events
+      const registeredEvents = registrations.map((reg: any) => ({
+        id: reg.eventId,
+        name: reg.eventName,
+        type: 'group',
+      }));
+
+      // 🔹 Get teams
+      const teams: any[] = [];
+
+      for (const reg of registrations) {
+        try {
+          const teamRes = await teamsAPI.getMyTeam(reg.eventId);
+
+          if (teamRes.data?.teamId) {
+            teams.push({
+              id: teamRes.data.teamId,
+              name: teamRes.data.teamName,
+              eventName: reg.eventName,
+              memberCount: teamRes.data.members?.length || 1,
+              maxSize: 6,
+            });
+          }
+        } catch {
+          // ignore if no team
+        }
+      }
+
       setData({
-        registeredEvents: eventsRes.data.events || [],
-        teams: teamsRes.data.teams || [],
+        registeredEvents,
+        teams,
         notifications: [],
       });
-    } catch (error) {
-      // Demo data
+
+    } catch (err) {
+      console.error("Dashboard error:", err);
+
       setData({
-        registeredEvents: [
-          { id: '1', name: 'Hackathon Royale', type: 'group' },
-          { id: '2', name: 'Speed Coding Solo', type: 'solo' },
-        ],
-        teams: [
-          { id: '1', name: 'Code Ninjas', eventName: 'Hackathon Royale', memberCount: 4, maxSize: 6 },
-        ],
-        notifications: [
-          { id: '1', message: 'Welcome to Neon Event Arena!', read: false, createdAt: new Date().toISOString() },
-        ],
+        registeredEvents: [],
+        teams: [],
+        notifications: [],
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  // 🔹 Loading UI
+  if (authLoading || isLoading || !isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader size="lg" text="Loading dashboard..." />
@@ -97,216 +104,180 @@ export default function DashboardPage() {
     );
   }
 
+  // 🔹 Stats
   const stats = [
     {
       label: 'Registered Events',
       value: data?.registeredEvents.length || 0,
       icon: Calendar,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
     },
     {
       label: 'Teams Joined',
       value: data?.teams.length || 0,
       icon: Users,
-      color: 'text-secondary',
-      bgColor: 'bg-secondary/10',
-    },
-    {
-      label: 'Notifications',
-      value: data?.notifications.filter(n => !n.read).length || 0,
-      icon: Bell,
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
     },
     {
       label: 'Email Status',
       value: user?.emailVerified ? 'Verified' : 'Pending',
       icon: user?.emailVerified ? CheckCircle : AlertCircle,
-      color: user?.emailVerified ? 'text-success' : 'text-warning',
-      bgColor: user?.emailVerified ? 'bg-success/10' : 'bg-warning/10',
     },
   ];
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-8"
-    >
-      {/* Welcome Header */}
-      <motion.div variants={item}>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Welcome back, <span className="text-primary text-glow-purple">{user?.fullName?.split(' ')[0]}</span>
-        </h1>
-        <p className="text-muted-foreground">
-          Here&apos;s what&apos;s happening with your events and teams.
-        </p>
+    <div className="space-y-10 relative z-10 pb-20">
+      
+      {/* Header Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-[#a855f7] to-[#3b82f6] pb-1">
+            Welcome back, {user?.fullName}
+          </h1>
+          <p className="text-muted-foreground mt-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            Connected to Matrix
+          </p>
+        </div>
       </motion.div>
 
-      {/* Email Verification Banner */}
-      {!user?.emailVerified && (
-        <motion.div
-          variants={item}
-          className="glass-panel rounded-xl p-4 border border-warning/30 flex items-center gap-4"
-        >
-          <Mail className="h-6 w-6 text-warning" />
-          <div className="flex-1">
-            <p className="text-foreground font-medium">Verify your email</p>
-            <p className="text-sm text-muted-foreground">Please verify your email to access all features.</p>
-          </div>
-          <Button variant="outline" className="border-warning/50 text-warning hover:bg-warning/10">
-            Resend Email
-          </Button>
-        </motion.div>
-      )}
+      {/* Email warning */}
+      <AnimatePresence>
+        {!user?.emailVerified && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-4 border border-yellow-500/50 bg-yellow-500/10 rounded-xl flex items-center gap-3 text-yellow-200 shadow-[0_0_20px_rgba(234,179,8,0.1)]"
+          >
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <p className="font-medium">Please verify your email address to unlock all features.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Grid */}
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            whileHover={{ y: -2 }}
-            className="glass-panel rounded-xl p-4 border border-border"
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {stats.map((s, i) => (
+          <motion.div 
+            key={s.label} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="relative group p-6 rounded-2xl glass-panel border border-[#a855f7]/20 bg-black/40 backdrop-blur-xl overflow-hidden hover:border-[#a855f7]/50 transition-all duration-300"
           >
-            <div className="flex items-center gap-3 mb-3">
-              <div className={cn('p-2 rounded-lg', stat.bgColor)}>
-                <stat.icon className={cn('h-5 w-5', stat.color)} />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#a855f7]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-1">{s.label}</p>
+                <p className="text-3xl font-bold text-white">{s.value}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-[#a855f7]/10 text-[#a855f7] ring-1 ring-[#a855f7]/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                <s.icon className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
           </motion.div>
         ))}
-      </motion.div>
+      </div>
 
-      {/* Quick Actions */}
-      <motion.div variants={item}>
-        <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/events">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="glass-panel rounded-xl p-4 border border-primary/20 hover:border-primary/50 cursor-pointer group"
-            >
-              <Calendar className="h-8 w-8 text-primary mb-3" />
-              <h3 className="font-medium text-foreground mb-1">Browse Events</h3>
-              <p className="text-sm text-muted-foreground">Find and register for events</p>
-              <ArrowRight className="h-4 w-4 text-primary mt-3 group-hover:translate-x-1 transition-transform" />
-            </motion.div>
-          </Link>
-
-          <Link href="/my-teams">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="glass-panel rounded-xl p-4 border border-secondary/20 hover:border-secondary/50 cursor-pointer group"
-            >
-              <Users className="h-8 w-8 text-secondary mb-3" />
-              <h3 className="font-medium text-foreground mb-1">My Teams</h3>
-              <p className="text-sm text-muted-foreground">Manage your team memberships</p>
-              <ArrowRight className="h-4 w-4 text-secondary mt-3 group-hover:translate-x-1 transition-transform" />
-            </motion.div>
-          </Link>
-
-          <Link href="/qr-pass">
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="glass-panel rounded-xl p-4 border border-neon-pink/20 hover:border-neon-pink/50 cursor-pointer group"
-            >
-              <QrCode className="h-8 w-8 text-neon-pink mb-3" />
-              <h3 className="font-medium text-foreground mb-1">QR Pass</h3>
-              <p className="text-sm text-muted-foreground">View your entry passes</p>
-              <ArrowRight className="h-4 w-4 text-neon-pink mt-3 group-hover:translate-x-1 transition-transform" />
-            </motion.div>
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* Registered Events */}
-      <motion.div variants={item}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">Registered Events</h2>
-          <Link href="/events" className="text-sm text-primary hover:underline">
-            View all
-          </Link>
-        </div>
-        {data?.registeredEvents && data.registeredEvents.length > 0 ? (
-          <div className="space-y-3">
-            {data.registeredEvents.slice(0, 3).map((event) => (
-              <motion.div
-                key={event.id}
-                whileHover={{ x: 4 }}
-                className="glass-panel rounded-lg p-4 flex items-center gap-4"
-              >
-                <div className={cn(
-                  'p-2 rounded-lg',
-                  event.type === 'solo' ? 'bg-secondary/20' : 'bg-primary/20'
-                )}>
-                  <Trophy className={cn(
-                    'h-5 w-5',
-                    event.type === 'solo' ? 'text-secondary' : 'text-primary'
-                  )} />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">{event.name}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{event.type} Event</p>
-                </div>
-                <div className="flex items-center gap-2 text-success">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm">Registered</span>
-                </div>
-              </motion.div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* Events */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass-panel rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-[#3b82f6]" />
+              Registered Events
+            </h2>
+            <Link href="/events">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
+                View All <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
           </div>
-        ) : (
-          <EmptyState
-            type="events"
-            title="No registered events"
-            description="Browse events and register to get started"
-            action={{ label: 'Browse Events', onClick: () => {} }}
-          />
-        )}
-      </motion.div>
 
-      {/* Teams */}
-      <motion.div variants={item}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-foreground">My Teams</h2>
-          <Link href="/my-teams" className="text-sm text-primary hover:underline">
-            View all
-          </Link>
-        </div>
-        {data?.teams && data.teams.length > 0 ? (
           <div className="space-y-3">
-            {data.teams.slice(0, 3).map((team) => (
-              <Link key={team.id} href={`/team/${team.id}`}>
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  className="glass-panel rounded-lg p-4 flex items-center gap-4"
+            {data?.registeredEvents.length ? (
+              data.registeredEvents.map((event, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + (i * 0.1) }}
+                  key={event.id} 
+                  className="p-4 border border-white/5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer flex justify-between items-center group"
                 >
-                  <div className="p-2 rounded-lg bg-primary/20">
-                    <Users className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-white group-hover:text-[#3b82f6] transition-colors">{event.name}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-white" />
+                </motion.div>
+              ))
+            ) : (
+              <EmptyState
+                type="events"
+                title="No active registrations"
+                description="Explore and register for upcoming matrix events."
+              />
+            )}
+          </div>
+        </motion.div>
+
+        {/* Teams */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass-panel rounded-2xl border border-white/10 bg-black/40 p-6 backdrop-blur-xl"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-[#a855f7]" />
+              My Teams
+            </h2>
+            <Link href="/my-teams">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-white">
+                Manage <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {data?.teams.length ? (
+              data.teams.map((team, i) => (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + (i * 0.1) }}
+                  key={team.id} 
+                  className="p-4 border border-white/5 bg-white/5 hover:bg-white/10 rounded-xl transition-all flex justify-between items-center group"
+                >
+                  <div>
+                    <span className="font-bold text-white block group-hover:text-[#a855f7] transition-colors">{team.name}</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider">{team.eventName}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{team.name}</p>
-                    <p className="text-sm text-muted-foreground">{team.eventName}</p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {team.memberCount}/{team.maxSize} members
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 text-sm font-medium">
+                    <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span>{team.memberCount}/{team.maxSize}</span>
                   </div>
                 </motion.div>
-              </Link>
-            ))}
+              ))
+            ) : (
+              <EmptyState
+                type="teams"
+                title="No team affiliations"
+                description="Form a squad or join existing ones for team events."
+              />
+            )}
           </div>
-        ) : (
-          <EmptyState
-            type="teams"
-            title="No teams yet"
-            description="Create or join a team to compete in group events"
-          />
-        )}
-      </motion.div>
-    </motion.div>
+        </motion.div>
+
+      </div>
+    </div>
   );
 }
