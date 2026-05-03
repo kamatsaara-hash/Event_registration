@@ -24,6 +24,8 @@ allowed_origins = [
 
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url:
+    # Strip trailing slash if the user accidentally included it
+    frontend_url = frontend_url.rstrip("/")
     allowed_origins.append(frontend_url)
 
 app.add_middleware(
