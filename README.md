@@ -97,3 +97,66 @@ This project is designed for **college events, hackathons, and club registration
   - Events
 
 
+## 📁 Project Structure
+
+team-registration/
+│
+├── backend/
+│ ├── app/
+│ │ ├── config/ # Configuration (DB, settings, env)
+│ │ │ ├── db.py
+│ │ │ └── settings.py
+│ │ │
+│ │ ├── models/ # Data models (session, email token)
+│ │ │ ├── session_model.py
+│ │ │ └── email_token_model.py
+│ │ │
+│ │ ├── routes/ # API route definitions
+│ │ │ ├── auth_routes.py
+│ │ │ ├── user_routes.py
+│ │ │ ├── event_routes.py
+│ │ │ ├── team_routes.py
+│ │ │ └── admin_routes.py
+│ │ │
+│ │ ├── schemas/ # Pydantic schemas (request/response validation)
+│ │ │ ├── auth_schema.py
+│ │ │ ├── user_schema.py
+│ │ │ ├── team_schema.py
+│ │ │ └── event_schema.py
+│ │ │
+│ │ ├── services/ # Business logic layer
+│ │ │ ├── auth_service.py
+│ │ │ ├── user_service.py
+│ │ │ ├── team_service.py
+│ │ │ ├── event_service.py
+│ │ │ └── email_service.py
+│ │ │
+│ │ ├── utils/ # Utility functions (security, helpers)
+│ │ │ └── security.py
+│ │ │
+│ │ └── main.py # FastAPI entry point
+│ │
+│ ├── requirements.txt
+│ └── .env
+│ └── .gitignore
+├── frontend/
+│ ├── app/ # Next.js App Router pages
+│ │ ├── (auth)/ # Login / Signup routes
+│ │ ├── (dashboard)/ # User dashboard pages
+│ │ ├── admin/ # Admin dashboard
+│ │ └── layout.tsx
+│ │
+│ ├── components/ # Reusable UI components
+│ │ ├── ui/
+│ │ └── common/
+│ │
+│ ├── lib/ # Core frontend logic
+│ │ ├── api.ts # Axios API layer
+│ │ └── auth-context.tsx # Auth state management
+│ │
+│ ├── public/ # Static assets
+│ ├── styles/ # Global styles (if any)
+│ └── package.json
+  └── .gitignore
+│
+├── README.md
