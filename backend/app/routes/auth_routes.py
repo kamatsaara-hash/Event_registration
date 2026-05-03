@@ -30,8 +30,8 @@ def login(data: LoginSchema, response: Response):
         key="sessionId",
         value=result["sessionId"],
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
     )
 
     return {"message": result["message"]}
@@ -46,8 +46,8 @@ def admin_login_route(data: LoginSchema, response: Response):
         key="sessionId",
         value=result["sessionId"],
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
     )
 
     return {"message": result["message"]}
