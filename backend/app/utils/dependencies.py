@@ -1,6 +1,5 @@
 from fastapi import Request, HTTPException
 from app.config.db import sessions_collection
-from bson import ObjectId
 from datetime import datetime
 
 
@@ -11,19 +10,13 @@ def get_current_user(request: Request):
     if not session_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # ✅ validate ObjectId
-    try:
-        session_object_id = ObjectId(session_id)
-    except:
-        raise HTTPException(status_code=401, detail="Invalid session format")
-
-    # ✅ fetch session
-    session = sessions_collection.find_one({"_id": session_object_id})
+    # ✅ fetch session by sessionId (not _id)
+    session = sessions_collection.find_one({"sessionId": session_id})
 
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session")
 
-    # ✅ NEW: check session expiry
+    # ✅ check session expiry
     if session.get("expiresAt") and session["expiresAt"] < datetime.utcnow():
         raise HTTPException(status_code=401, detail="Session expired")
 

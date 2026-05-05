@@ -82,8 +82,11 @@ export default function DashboardPage() {
         notifications: [],
       });
 
-    } catch (err) {
-      console.error("Dashboard error:", err);
+    } catch (err: any) {
+      // Silently handle 401 errors
+      if (err.response?.status !== 401) {
+        console.error("Dashboard error:", err);
+      }
 
       setData({
         registeredEvents: [],

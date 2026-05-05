@@ -27,15 +27,22 @@ export default function AdminLayout({
     }
   }, [isLoading, isAuthenticated, isAdmin, router, pathname]);
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
-
+  // ✅ Check admin-login path FIRST (before auth/loading checks)
   if (pathname.startsWith('/admin/admin-login')) {
     return <>{children}</>;
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  if (!isAuthenticated) {
+    router.push('/admin/admin-login');
+    return null;
+  }
+
+  if (isAuthenticated && !isAdmin) {
+    router.push('/dashboard');
     return null;
   }
 

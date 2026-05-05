@@ -99,64 +99,118 @@ This project is designed for **college events, hackathons, and club registration
 
 ## 📁 Project Structure
 
-team-registration/
+TEAM_REGISTRATION/
 │
 ├── backend/
 │ ├── app/
-│ │ ├── config/ # Configuration (DB, settings, env)
+│ │ ├── config/ # Database & settings
 │ │ │ ├── db.py
 │ │ │ └── settings.py
 │ │ │
-│ │ ├── models/ # Data models (session, email token)
+│ │ ├── constants/ # Static data
+│ │ │ └── events.py
+│ │ │
+│ │ ├── models/ # Database models
+│ │ │ ├── user_model.py
+│ │ │ ├── team_model.py
+│ │ │ ├── event_model.py
+│ │ │ ├── registration_model.py
 │ │ │ ├── session_model.py
 │ │ │ └── email_token_model.py
 │ │ │
-│ │ ├── routes/ # API route definitions
+│ │ ├── routes/ # API routes
 │ │ │ ├── auth_routes.py
 │ │ │ ├── user_routes.py
 │ │ │ ├── event_routes.py
 │ │ │ ├── team_routes.py
 │ │ │ └── admin_routes.py
 │ │ │
-│ │ ├── schemas/ # Pydantic schemas (request/response validation)
+│ │ ├── schemas/ # Pydantic schemas
 │ │ │ ├── auth_schema.py
 │ │ │ ├── user_schema.py
+│ │ │ ├── event_schema.py
 │ │ │ ├── team_schema.py
-│ │ │ └── event_schema.py
+│ │ │ └── registration_schema.py
 │ │ │
-│ │ ├── services/ # Business logic layer
+│ │ ├── services/ # Business logic
 │ │ │ ├── auth_service.py
 │ │ │ ├── user_service.py
-│ │ │ ├── team_service.py
 │ │ │ ├── event_service.py
-│ │ │ └── email_service.py
+│ │ │ ├── team_service.py
+│ │ │ ├── registration_service.py
+│ │ │ ├── admin_service.py
+│ │ │ ├── email_service.py
+│ │ │ └── qr_service.py
 │ │ │
-│ │ ├── utils/ # Utility functions (security, helpers)
+│ │ ├── utils/ # Utilities
+│ │ │ ├── dependencies.py
+│ │ │ ├── generate_code.py
 │ │ │ └── security.py
 │ │ │
 │ │ └── main.py # FastAPI entry point
 │ │
+│ ├── venv/
+│ ├── .env
 │ ├── requirements.txt
-│ └── .env
 │ └── .gitignore
-├── frontend/
-│ ├── app/ # Next.js App Router pages
-│ │ ├── (auth)/ # Login / Signup routes
-│ │ ├── (dashboard)/ # User dashboard pages
-│ │ ├── admin/ # Admin dashboard
-│ │ └── layout.tsx
-│ │
-│ ├── components/ # Reusable UI components
-│ │ ├── ui/
-│ │ └── common/
-│ │
-│ ├── lib/ # Core frontend logic
-│ │ ├── api.ts # Axios API layer
-│ │ └── auth-context.tsx # Auth state management
-│ │
-│ ├── public/ # Static assets
-│ ├── styles/ # Global styles (if any)
-│ └── package.json
-  └── .gitignore
 │
-├── README.md
+├── frontend/
+│ ├── app/ # Next.js App Router
+│ │ ├── (dashboard)/ # User dashboard group
+│ │ │ ├── dashboard/
+│ │ │ ├── email-verification/
+│ │ │ ├── my-teams/
+│ │ │ ├── profile/
+│ │ │ ├── qr-pass/
+│ │ │ ├── team/[teamId]/
+│ │ │ └── layout.tsx
+│ │ │
+│ │ ├── admin/ # Admin panel
+│ │ │ ├── admin-login/
+│ │ │ ├── analytics/
+│ │ │ ├── attendance/
+│ │ │ ├── events/
+│ │ │ └── participants/
+│ │ │
+│ │ ├── create-team/[eventId]/
+│ │ ├── join-team/[eventId]/
+│ │ ├── team-options/[eventId]/
+│ │ ├── events/
+│ │ ├── login/
+│ │ ├── signup/
+│ │ ├── api/
+│ │ ├── layout.tsx
+│ │ ├── page.tsx
+│ │ ├── providers.tsx
+│ │ └── globals.css
+│ │
+│ ├── components/ # UI components
+│ │ ├── ui/
+│ │ ├── admin-table.tsx
+│ │ ├── auth-card.tsx
+│ │ ├── dashboard-sidebar.tsx
+│ │ ├── event-card.tsx
+│ │ ├── navbar.tsx
+│ │ ├── qr-scanner.tsx
+│ │ ├── team-card.tsx
+│ │ └── theme-provider.tsx
+│ │
+│ ├── hooks/ # Custom hooks
+│ │ ├── use-mobile.ts
+│ │ └── use-toast.ts
+│ │
+│ ├── lib/ # Core logic
+│ │ ├── api.ts
+│ │ ├── auth-context.tsx
+│ │ └── utils.ts
+│ │
+│ ├── public/
+│ ├── styles/
+│ ├── node_modules/
+│ ├── .gitignore
+│ ├── next.config.mjs
+│ ├── package.json
+│ └── package-lock.json
+│
+├── .gitignore
+└── README.md

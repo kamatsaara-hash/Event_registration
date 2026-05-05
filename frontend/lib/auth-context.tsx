@@ -51,8 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await authAPI.getMe();
       setUser(res.data);
-    } catch (err) {
-      console.error("No active session or error fetching user:", err);
+    } catch (err: any) {
+      // Silently handle 401 (expected for unauthenticated users)
+      if (err.response?.status !== 401) {
+        console.error("Error fetching user:", err);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);

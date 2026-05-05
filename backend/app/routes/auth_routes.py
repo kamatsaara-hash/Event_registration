@@ -26,12 +26,14 @@ def signup(data: UserSignup):
 def login(data: LoginSchema, response: Response):
     result = login_user(data)
 
+    # ✅ Allow both HTTP (localhost) and HTTPS (production)
+    is_production = False  # Change to True in production
     response.set_cookie(
         key="sessionId",
         value=result["sessionId"],
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=is_production,
+        samesite="lax" if not is_production else "none",
     )
 
     return {"message": result["message"]}
@@ -42,12 +44,14 @@ def login(data: LoginSchema, response: Response):
 def admin_login_route(data: LoginSchema, response: Response):
     result = admin_login(data)
 
+    # ✅ Allow both HTTP (localhost) and HTTPS (production)
+    is_production = False  # Change to True in production
     response.set_cookie(
         key="sessionId",
         value=result["sessionId"],
         httponly=True,
-        secure=True,
-        samesite="none",
+        secure=is_production,
+        samesite="lax" if not is_production else "none",
     )
 
     return {"message": result["message"]}
@@ -82,3 +86,21 @@ def get_me(request: Request):
 @router.get("/verify-email")
 def verify(token: str = Query(...)):
     return verify_email(token)
+
+
+# 🔹 DEV ONLY: Verify by email (for testing without email service)
+@router.get("/dev/verify-email/{email}")
+def dev_verify(email: str):
+    """Dev-only endpoint to verify email without token (testing purposes)"""
+    from app.config.db import users_collection
+    from bson import ObjectId
+    
+    result = users_collection.update_one(
+        {"email": email},
+        {"$set": {"isVerified": True}},
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": f"Email {email} verified successfully (dev mode)"}
